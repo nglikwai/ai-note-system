@@ -1,0 +1,3 @@
+Read and follow CLAUDE.md in the repo root. It defines the note-taking workflow:
+when the user jots a quick note, organize it into notes/<category>/<slug>.md with
+frontmatter, then run `node scripts/sync.mjs` to publish it to S3.

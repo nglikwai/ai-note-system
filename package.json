@@ -1,0 +1,21 @@
+{
+  "name": "ai-notes",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "sync": "node scripts/sync.mjs",
+    "setup": "node scripts/setup-bucket.mjs",
+    "web": "npm --prefix web run dev",
+    "pull": "node scripts/pull.mjs",
+    "check": "node scripts/check.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1078.0",
+    "better-sqlite3": "^12.11.1",
+    "gray-matter": "^4.0.3"
+  },
+  "type": "module"
+}
