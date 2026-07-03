@@ -7,7 +7,7 @@ import matter from 'gray-matter'
 import { PutObjectCommand, ListObjectsV2Command, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { loadEnv, s3Client, contentTypeFor, walk, listUsers, notesDir } from './lib.mjs'
 import { db, upsertNote, userNotes, deleteNote } from './db.mjs'
-import { extractUrls, buildPreviews } from './previews.mjs'
+import { extractUrls, buildPreviews, pickThumbnail } from './previews.mjs'
 
 const env = loadEnv()
 const s3 = s3Client(env)
@@ -36,6 +36,7 @@ for (const user of listUsers()) {
   // ---- 1. Import markdown files into the database ----
   const noteFiles = walk(NOTES_DIR, '.md').filter((f) => !f.includes(`${path.sep}attachments${path.sep}`))
   const fileIds = new Set()
+  const frontmatterThumbs = new Map()
 
   for (const file of noteFiles) {
     const rel = path.relative(NOTES_DIR, file).split(path.sep).join('/')
@@ -53,6 +54,7 @@ for (const user of listUsers()) {
       continue // absent from fileIds → database row + S3 copy removed below
     }
     fileIds.add(id)
+    if (data.thumbnail) frontmatterThumbs.set(id, String(data.thumbnail))
     // Frontmatter dates are day-precision; when they match the file's own timestamp we
     // use the precise file time so the web can show "5 min ago" instead of just a date.
     const toTs = (v, fileTime) => {
@@ -83,18 +85,27 @@ for (const user of listUsers()) {
   const notes = userNotes.all(user)
   console.log(`[${user}] database: ${notes.length} note(s)${removed.length ? `, ${removed.length} removed` : ''}`)
 
+  // link previews (needed for card thumbnails and in-note link cards)
+  const urls = [...new Set(notes.flatMap((n) => extractUrls(n.content)))]
+    .filter((u) => !u.includes('.amazonaws.com/')) // skip our own attachment links
+  const previews = await buildPreviews(urls)
+
   // ---- 2. Build index + publish to S3 ----
-  const index = notes.map((n) => ({
-    id: n.id,
-    key: `notes/${n.id}.md`, // relative to users/<user>/ — the web app adds the prefix
-    title: n.title,
-    category: n.category,
-    tags: JSON.parse(n.tags),
-    created: n.created,
-    updated: n.updated,
-    archived: n.archived || undefined,
-    excerpt: n.content.replace(/[#*_>`\[\]!()]/g, '').replace(/\s+/g, ' ').slice(0, 120),
-  }))
+  const index = notes.map((n) => {
+    const thumbnail = pickThumbnail(n.content, previews, frontmatterThumbs.get(n.id))
+    return {
+      id: n.id,
+      key: `notes/${n.id}.md`, // relative to users/<user>/ — the web app adds the prefix
+      title: n.title,
+      category: n.category,
+      tags: JSON.parse(n.tags),
+      created: n.created,
+      updated: n.updated,
+      archived: n.archived || undefined,
+      excerpt: n.content.replace(/[#*_>`\[\]!()]/g, '').replace(/\s+/g, ' ').slice(0, 120),
+      ...(thumbnail ? { thumbnail } : {}),
+    }
+  })
 
   for (const n of notes) {
     const archLine = n.archived ? `archived: ${n.archived}\n` : ''
@@ -109,11 +120,6 @@ for (const user of listUsers()) {
   }
 
   await put(`${prefix}notes/index.json`, JSON.stringify(index, null, 2), 'application/json; charset=utf-8')
-
-  // link previews for all URLs in this user's notes (cached; only new links hit the network)
-  const urls = [...new Set(notes.flatMap((n) => extractUrls(n.content)))]
-    .filter((u) => !u.includes('.amazonaws.com/')) // skip our own attachment links
-  const previews = await buildPreviews(urls)
   await put(`${prefix}notes/previews.json`, JSON.stringify(previews, null, 2), 'application/json; charset=utf-8')
 
   // ---- 3. Remove S3 notes that no longer exist locally ----

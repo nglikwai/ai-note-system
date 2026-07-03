@@ -12,6 +12,17 @@ export function extractUrls(markdown) {
   return [...urls]
 }
 
+// Card thumbnail: frontmatter override → first embedded image → first link preview image.
+export function pickThumbnail(content, previews, frontmatterThumb) {
+  if (frontmatterThumb) return String(frontmatterThumb)
+  const img = content.match(/!\[[^\]]*\]\((https?:\/\/[^)]+)\)/)
+  if (img) return img[1]
+  for (const url of extractUrls(content)) {
+    if (previews[url]?.image) return previews[url].image
+  }
+  return undefined
+}
+
 function metaContent(html, patterns) {
   for (const p of patterns) {
     const re = new RegExp(
