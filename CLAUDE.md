@@ -48,6 +48,16 @@ Example: *"learning Piano, teacher: Miss LEE"*
    - Image by URL: `![description](https://...)`
    - Local image file: copy to `users/<user>/notes/attachments/`, reference as
      `![description](https://likwai.s3.us-east-1.amazonaws.com/users/<user>/attachments/<filename>)`
+
+   **To-do items:** if the jot is (or contains) an actionable task — something to do,
+   buy, call, finish, book, etc., not just a fact to remember — write that line as a
+   GFM task checkbox (`- [ ] Buy milk`) and add `todo` to that note's tags. This still
+   follows merge-first: the item goes into whatever topic note it belongs to (a dentist
+   call goes in the health note, not a generic todo note); the `todo` tag is what makes
+   every pending item discoverable together via the `#todo` filter in the web app,
+   regardless of which note it lives in. When the user later marks it done (in chat, or
+   the web note text says so), check the box (`- [x]`) rather than deleting the line;
+   drop `todo` from the note's tags only once no unchecked boxes remain in it.
 3. **Frontmatter is required** on every note (dates `YYYY-MM-DD`; set `updated` to
    today whenever you touch a note):
 
