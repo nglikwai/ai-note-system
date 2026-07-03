@@ -83,18 +83,26 @@ text, photo, created}`) and mirrors their photos into that person's
 no AI work needed, but this is why you must run pull BEFORE sync: syncing first would
 overwrite online edits with stale local files). Then for each remaining jot file:
 
-1. Organize `text` into that same person's `users/<user>/notes/` exactly like a chat
-   jot (merge into existing topic notes when one fits). Never file one user's jot into
-   another user's folder.
-2. If `photo` is set (a path like `attachments/<file>`), embed it in the note:
+1. **Targeted remarks first.** A jot with a `noteId` (and `noteTitle`) field — left via
+   the "leave a remark" box at the bottom of a note in the web app — is already tied to
+   one exact note. Skip the merge-target search entirely: open
+   `users/<user>/notes/<noteId>.md` directly and apply the remark as an edit (e.g. "the
+   teacher name changed to Mr Chan" → update the teacher's name wherever it appears),
+   following the same append-cleanly/bump-`updated` rules as any other merge. If that
+   file no longer exists (deleted/archived since), fall back to treating `text` like a
+   normal jot.
+2. Otherwise, organize `text` into that same person's `users/<user>/notes/` exactly
+   like a chat jot (merge into existing topic notes when one fits). Never file one
+   user's jot into another user's folder.
+3. If `photo` is set (a path like `attachments/<file>`), embed it in the note:
    `![<description from the jot text>](https://likwai.s3.us-east-1.amazonaws.com/users/<user>/<photo>)`
-3. **NEVER open, Read, or view image files — not from `attachments/`, not from
+4. **NEVER open, Read, or view image files — not from `attachments/`, not from
    `inbox` photos.** Images consume a large number of tokens. File photos using ONLY
    the jot's text caption; if there is no caption, title it by date (e.g. "Photo
    2026-07-02") and let the user rename it later. Only look at an image if the user
    explicitly asks you to in this conversation.
-4. Delete the processed `inbox/<user>/*.json` file.
-5. When all items are processed, run `node scripts/sync.mjs`.
+5. Delete the processed `inbox/<user>/*.json` file.
+6. When all items are processed, run `node scripts/sync.mjs`.
 
 **Unorganized placeholders:** every web jot is also published by the web app as an
 instant placeholder note under `notes/unorganized/` (category/tag `unorganized`) so it

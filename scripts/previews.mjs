@@ -40,7 +40,7 @@ async function fetchMeta(url) {
     })
     if (!res.ok || !(res.headers.get('content-type') || '').includes('text/html')) return {}
     const html = (await res.text()).slice(0, 300_000)
-    let image = metaContent(html, ['og:image', 'twitter:image'])
+    let image = decode(metaContent(html, ['og:image', 'twitter:image']))
     if (image) image = new URL(image, res.url).href // resolve relative image URLs
     return {
       title: decode(metaContent(html, ['og:title', 'twitter:title']) || html.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1]),
